@@ -32,11 +32,11 @@
 //! });
 //! ```
 
-use event_listener::Event;
 use std::{
     ptr,
     sync::atomic::{AtomicPtr, Ordering::*},
 };
+use tokio::sync::Semaphore;
 
 /// The shareable container which value is set once.
 #[derive(Debug)]
@@ -44,7 +44,7 @@ pub struct OnceWatch<T>
 where
     T: Sync,
 {
-    event: Event,
+    semaphore: Semaphore,
     data: AtomicPtr<T>,
 }
 
@@ -54,9 +54,8 @@ where
 {
     /// Creates a new uninitialized instance.
     pub fn new() -> Self {
-        let event = Event::new();
         Self {
-            event,
+            semaphore: Semaphore::new(0),
             data: AtomicPtr::new(ptr::null_mut()),
         }
     }
@@ -74,7 +73,7 @@ where
 
         match result {
             Ok(_) => {
-                self.event.notify_additional(usize::MAX);
+                self.semaphore.add_permits(usize::MAX >> 3);
                 Ok(())
             }
             Err(_) => {
@@ -86,8 +85,7 @@ where
 
     /// Waits until the value is set and obtains the reference.
     pub async fn get(&self) -> &T {
-        let listener = self.event.listen();
-        listener.await;
+        let _permit = self.semaphore.acquire().await.unwrap();
         let ptr = self.data.load(Acquire);
         unsafe { ptr.as_ref().unwrap() }
     }
