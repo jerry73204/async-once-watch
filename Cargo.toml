@@ -2,6 +2,7 @@
 name = "async-once-watch"
 version = "0.1.0"
 edition = "2021"
+description = "Asynchronous and shareable container which value is set once."
 authors = ["Jerry Lin <jerry73204@gmail.com>"]
 categories = ["concurrency"]
 documentation = "https://docs.rs/async-once-watch/"
