@@ -12,13 +12,15 @@ async fn pubsub_test() {
     let secret: u8 = rand::thread_rng().gen();
 
     let producer = spawn(async move {
-        sleep(Duration::from_millis(200)).await;
+        sleep(Duration::from_millis(500)).await;
         assert!(STATE.set(secret).is_ok());
         assert_eq!(STATE.set(secret), Err(secret));
     });
 
     let consumers = (0..16).map(|_| {
         spawn(async move {
+            assert!(STATE.try_get().is_none());
+
             let received = *STATE.get().await;
             assert_eq!(received, secret);
         })
